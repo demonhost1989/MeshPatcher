@@ -1,20 +1,18 @@
 {
-  "PresetName": "Patcher",
+  "PresetName": "Cubemap example patcher",
 
   "Textures": { // Textures to apply
-    "Diffuse": "", // test.nif
-    "Normal": "", // test_n.nif
-    "Opacity": "", // test_?.nif
-    "Roughness": "", // test_?.nif
-    "Metal": "", // test_e.nif   (cubemap)
-    "AO": "", // test_?.nif
-    "Height": "", // test_?.nif
-    "Emissive": "",
-    "Transmissive": "",
-    "ID": ""
+    "Diffuse": "",                                             // example.dds    (the regular texture)
+    "Normal": "",                                              // example_n.dds  (the blue/purpleish texture. aka bumpmap)
+    "Emissive": "",                                            // example_sk.dds (seldom used)
+    "Height": "",                                              // example_p.dds  (the grey texture) 
+    "Environment": "textures\\cubemaps\\QuickSkyDark_e.dds",   // example_e.dds  (cubemap)
+    "Greyscale environment": "",                               // example_m.dds  (seldom used)
+    "Subsurface tint": "",                                     // example_s.dds  (seldom used)
+    "Backlight": "",                                           // example_b.dds  (never seen used)
   },
 
-  "Shader": { // Shaders to apply // Example Settings taken from sentinel
+  "Shader": { // Shaders to apply // Example Settings taken from sentinel iron helmet
     "Glossiness": 40.00,
     "SpecularStrength": 1.00,
     "LightingEffect1": 0.30,
@@ -22,7 +20,7 @@
     "EnvironmentScale": 0.25
   },
 
-  "Flags1": // Shaders to apply // Example Settings taken from sentinel
+  "Flags1": // Shaders to apply // Example Settings taken from sentinel iron helmet
   [
     "Specular",
     "Skinned",
@@ -34,7 +32,7 @@
     "Zbuffer_Test"
   ],
 
-  "Flags2": // Shaders to apply // Example Settings taken from sentinel
+  "Flags2": // Shaders to apply // Example Settings taken from sentinel iron helmet
   [
     "ZBuffer_Write",
     "EnvMap_Light_Fade"
