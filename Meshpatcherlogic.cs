@@ -1,7 +1,13 @@
-﻿using System.Reflection;
+﻿using System.Linq;
+using System.Reflection;
 using NiflySharp;
 using NiflySharp.Blocks;
 using NiflySharp.Enums;
+using NifFile = NiflySharp.NifFile;
+using BSLightingShaderProperty = NiflySharp.Blocks.BSLightingShaderProperty;
+using BSShaderTextureSet = NiflySharp.Blocks.BSShaderTextureSet;
+using SkyrimShaderPropertyFlags1 = NiflySharp.Enums.SkyrimShaderPropertyFlags1;
+using SkyrimShaderPropertyFlags2 = NiflySharp.Enums.SkyrimShaderPropertyFlags2;
 
 
 namespace MeshPatcherProject
@@ -58,6 +64,11 @@ namespace MeshPatcherProject
                     if (shader is not BSLightingShaderProperty lsp)
                         continue;
 
+                    // Only touch shapes actually set up for environment mapping - everything else
+                    // (Default, Glow_Shader, Parallax, Skin_Tint, etc.) is left completely alone.
+                    if (!IsEnvironmentMapShader(lsp))
+                        continue;
+
                     ApplySettings(nif, lsp, settings, log);
                     shapesPatchedInFile++;
                 }
@@ -100,6 +111,40 @@ namespace MeshPatcherProject
                 : $"Done: patched {result.PatchedShapes} shape(s) across {result.PatchedFiles} file(s), copied {result.CopiedFiles} unchanged file(s).");
 
             return result;
+        }
+
+        // We tried guessing NiflySharp's exact property/enum name for nifxml's "Skyrim Shader Type"
+        // field twice and both guesses were wrong for the 2.0.4 package actually in use. Reflection
+        // then revealed the real shape: BSLightingShaderProperty exposes several per-game-version
+        // backing properties (ShaderType_SK_FO4, ShaderType_FO3_NV, ShaderType_FO76_SF) plus one
+        // plain "ShaderType" property (type BSLightingShaderType) that's the version-normalized one
+        // meant for direct use - that's the one we want here, not the raw per-version fields.
+        static readonly PropertyInfo ShaderTypeProperty = FindShaderTypeProperty();
+
+        static PropertyInfo FindShaderTypeProperty()
+        {
+            var properties = typeof(BSLightingShaderProperty)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.PropertyType.IsEnum &&
+                            p.Name.Replace("_", "").Contains("ShaderType", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var exact = properties.FirstOrDefault(p => p.Name.Equals("ShaderType", StringComparison.OrdinalIgnoreCase));
+            if (exact is not null)
+                return exact;
+
+            throw new InvalidOperationException(
+                $"Couldn't find a plain 'ShaderType' property on BSLightingShaderProperty via reflection " +
+                $"(found {properties.Count} enum-typed candidate(s) instead: " +
+                $"{string.Join(", ", properties.Select(c => $"{c.PropertyType.Name}.{c.Name}"))}). " +
+                "Open BSLightingShaderProperty in your IDE and pick the right one manually - likely whichever " +
+                "matches the game version these nif files target.");
+        }
+
+        static bool IsEnvironmentMapShader(BSLightingShaderProperty lsp)
+        {
+            var value = ShaderTypeProperty.GetValue(lsp)?.ToString() ?? string.Empty;
+            return string.Equals(value.Replace("_", ""), "EnvironmentMap", StringComparison.OrdinalIgnoreCase);
         }
 
         // NiflySharp (as of the version in use here) does not generate public setters for
